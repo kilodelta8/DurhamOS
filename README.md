@@ -157,6 +157,7 @@ Step 1: Install Core Dependencies
 First, update your system and install the essential packages.
 
 Bash
+
 `
 sudo apt update && sudo apt upgrade
 sudo apt install build-essential nasm qemu-system-x86 xorriso libgmp-dev libmpfr-dev libmpc-dev texinfo bison flex
@@ -166,6 +167,7 @@ Step 2: Create an Organized Directory Structure
 We will create a main project folder, and inside it, we'll have separate directories for our toolchain and our OS source code.
 
 Bash
+
 `
 mkdir ~/durhamos_project
 cd ~/durhamos_project
@@ -178,14 +180,10 @@ Step 3: Set Up Environment Variables
 These variables will point to our new directories.
 
 Bash
+
 `
-# Set the target architecture
 export TARGET=x86_64-elf
-
-# Set the path for the final installed cross-compiler
 export PREFIX="$HOME/durhamos_project/cross_compiler"
-
-# Add the new compiler's bin directory to your PATH
 export PATH="$PREFIX/bin:$PATH"
 `
 Pro-Tip: To make these variables permanent, add the three export lines above to the end of your ~/.bashrc file. Then, run source ~/.bashrc or open a new terminal for the changes to take effect.
