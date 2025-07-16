@@ -147,8 +147,8 @@ Phase 3: Code Generation. Traverse the AST and generate x86-64 assembly code.
 Phase 4: Integration. The compiler will eventually produce executables in the format our kernel understands, making DPL a native language for DurhamOS.
 
 
-=============================================================================================
-=============================================================================================
+================================================================================================
+================================================================================================
 
 Stage 0 (Revised): Setting Up a Clean Development Environment
 This guide will help you set up a well-structured environment on Ubuntu/Debian for OS development.
