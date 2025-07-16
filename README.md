@@ -239,3 +239,48 @@ You should see the output:
 ...  
 
 Your environment is now fully configured with a clean, organized structure. All your OS development will happen inside ~/durhamos_project/os_source, and your purpose-built compiler is ready to use.
+
+
+================================================================================================
+================================================================================================
+
+
+
+Stage 1, Task 1: "Hello, World" in 16-bit Real Mode
+Here's the plan:
+
+Navigate to our OS source directory: `~/durhamos_project/os_source`.  
+
+Create a new file named `boot.asm`. This will contain our assembly code.  
+
+Create a Makefile to automate assembling boot.asm and running it in QEMU.  
+
+
+
+Instructions
+Save the Files: In your `~/durhamos_project/os_source` directory, create `boot.asm` and `Makefile`.
+
+Run the Makefile: Open your terminal in the os_source directory and simply type:
+
+Bash    
+`make`  
+
+You can also use `make run`, which does the same thing.
+
+
+If everything is set up correctly, you will see a QEMU window appear. 
+Inside that window, at the very top left, you should see the text:
+
+`Hello, DurhamOS!`  
+
+This simple message is a huge milestone. It proves that you have successfully:
+Written valid 16-bit assembly code.
+Assembled it into a binary file.
+Created a valid boot sector that the BIOS recognizes.
+Packaged it into a disk image.
+Booted your machine (the QEMU emulator) from that disk.
+
+
+
+================================================================================================
+================================================================================================
