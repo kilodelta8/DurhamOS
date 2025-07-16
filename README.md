@@ -157,24 +157,18 @@ Step 1: Install Core Dependencies
 First, update your system and install the essential packages.
 
 Bash
-
-`
-sudo apt update && sudo apt upgrade
-sudo apt install build-essential nasm qemu-system-x86 xorriso libgmp-dev libmpfr-dev libmpc-dev texinfo bison flex
-`
+`sudo apt update && sudo apt upgrade`
+`sudo apt install build-essential nasm qemu-system-x86 xorriso libgmp-dev libmpfr-dev libmpc-dev texinfo bison flex`
 
 Step 2: Create an Organized Directory Structure
 We will create a main project folder, and inside it, we'll have separate directories for our toolchain and our OS source code.
 
 Bash
-
-`
-mkdir ~/durhamos_project
-cd ~/durhamos_project
-mkdir toolchain       # For downloading and building the compiler
-mkdir os_source       # Where your actual OS code will live
-mkdir toolchain/src   # To store the downloaded source code for binutils/gcc
-`
+`mkdir ~/durhamos_project`
+`cd ~/durhamos_project`
+`mkdir toolchain       # For downloading and building the compiler`
+`mkdir os_source       # Where your actual OS code will live`
+`mkdir toolchain/src   # To store the downloaded source code for binutils/gcc`
 
 Step 3: Set Up Environment Variables
 These variables will point to our new directories.
