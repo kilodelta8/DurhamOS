@@ -1,66 +1,145 @@
 ; =============================================================================
 ; DurhamOS Stage 1 Bootloader
 ;
-; This code runs in 16-bit Real Mode and is the first code executed by the
-; CPU after the BIOS hands off control. Its only job is to print a message
-; to the screen to verify that our toolchain and boot process work.
+; This code now transitions the CPU from 16-bit Real Mode to 32-bit
+; Protected Mode.
 ; =============================================================================
 
-org 0x7C00      ; The BIOS loads the bootloader at this memory address.
-bits 16         ; We are in 16-bit Real Mode.
+org 0x7C00      ; The BIOS loads us at this address.
+bits 16         ; We start in 16-bit Real Mode.
 
 start:
     ; --- Setup Data Segments ---
-    ; We can't assume the segment registers are set up for us, so we
-    ; set DS (Data Segment) to the same address as CS (Code Segment).
     mov ax, cs
     mov ds, ax
     mov es, ax
 
-    ; --- Print the "Hello" message using a BIOS interrupt ---
-    ; BIOS video teletype interrupt: int 0x10
-    ;  - AH = 0x0E (function: write character in teletype mode)
-    ;  - AL = The character to print
-    ;  - BH = Page number (usually 0)
-    ;  - BL = Color (not needed in teletype mode)
-    mov si, msg_hello   ; SI (Source Index) points to our message string.
-    call print_string   ; Call our printing subroutine.
+    ; --- Print our initial "Hello" message in Real Mode ---
+    mov si, msg_hello
+    call print_string_16
+
+    ; --- Switch to Protected Mode ---
+    cli             ; 1. Clear interrupts. We must not be interrupted.
+    lgdt [gdt_descriptor] ; 2. Load the GDT descriptor.
+    
+    mov eax, cr0    ; 3. Get the control register 0.
+    or eax, 1       ; 4. Set the Protection Enable (PE) bit.
+    mov cr0, eax    ; 5. Write it back. We are now in Protected Mode!
+
+    ; 6. Far jump to flush the CPU pipeline and load our new code segment.
+    jmp CODE_SEG:protected_mode_start
+
+; =============================================================================
+; 16-bit Subroutines (Real Mode)
+; =============================================================================
+print_string_16:
+    mov ah, 0x0E
+.loop:
+    lodsb
+    cmp al, 0
+    je .done
+    int 0x10
+    jmp .loop
+.done:
+    ret
+
+; =============================================================================
+; Global Descriptor Table (GDT)
+; =============================================================================
+gdt_start:
+    ; Null Descriptor (required)
+    dd 0    ; dd = define double word (4 bytes)
+    dd 0
+
+    ; Code Segment Descriptor (Base=0, Limit=0xFFFFF, Ring 0, 32-bit)
+    ; Limit (bits 0-15)
+    dw 0xFFFF
+    ; Base (bits 0-15)
+    dw 0x0000
+    ; Base (bits 16-23)
+    db 0x00
+    ; Access Byte: Present(1), Ring 0(00), Type(1), Executable(1), Dir(0), RW(1), Accessed(0)
+    db 0b10011010 
+    ; Flags (Granularity(1), 32-bit(1)) + Limit (bits 16-19)
+    db 0b11001111 
+    ; Base (bits 24-31)
+    db 0x00
+
+    ; Data Segment Descriptor (Base=0, Limit=0xFFFFF, Ring 0, 32-bit)
+    ; Same as code segment, but with a different access byte.
+    dw 0xFFFF
+    dw 0x0000
+    db 0x00
+    ; Access Byte: Present(1), Ring 0(00), Type(1), Executable(0), Dir(0), RW(1), Accessed(0)
+    db 0b10010010
+    db 0b11001111
+    db 0x00
+
+gdt_end:
+
+; GDT Descriptor (a pointer to the GDT itself)
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1 ; Size of the GDT
+    dd gdt_start                ; Start address of the GDT
+
+; GDT segment selectors (offsets into the GDT)
+; --- THIS IS THE FIX ---
+CODE_SEG equ 0x08 ; Offset of the code segment (8 bytes from the start)
+DATA_SEG equ 0x10 ; Offset of the data segment (16 bytes from the start)
+
+; =============================================================================
+; 32-bit Protected Mode Code
+; =============================================================================
+bits 32
+protected_mode_start:
+    ; --- Setup Data Segments for Protected Mode ---
+    ; We must load our data segment selectors into the segment registers.
+    mov ax, DATA_SEG
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+    ; --- Print a confirmation message in Protected Mode ---
+    ; We can no longer use BIOS interrupts. We must write to video memory directly.
+    mov esi, msg_protected
+    mov edi, 0xb8000 ; Video memory starts here.
+    call print_string_32
 
     ; --- Hang the system ---
-    ; The bootloader's job is done. We put the CPU in an infinite loop
-    ; to prevent it from executing random memory.
-hang:
-    jmp hang
+    jmp $ ; The '$' symbol means "this current address". Infinite loop.
 
 ; =============================================================================
-; Subroutine: print_string
-; Prints a null-terminated string to the screen via BIOS interrupt 0x10.
-; Input: SI must point to the start of the string.
+; 32-bit Subroutine: print_string_32
+; Prints a null-terminated string by writing to VGA memory.
+; Input: ESI must point to the string, EDI must point to video memory location.
 ; =============================================================================
-print_string:
-    mov ah, 0x0E        ; Set BIOS function to "teletype output".
+print_string_32:
 .loop:
-    lodsb               ; Load byte from [SI] into AL, and increment SI.
-    cmp al, 0           ; Is the character a null terminator (0)?
-    je .done            ; If so, we are finished.
-    int 0x10            ; Otherwise, call the BIOS video interrupt to print it.
-    jmp .loop           ; Repeat for the next character.
+    lodsb           ; Load byte from [ESI] into AL, and increment ESI.
+    cmp al, 0
+    je .done
+    
+    mov ah, 0x0F    ; Attribute byte: White text on Black background.
+    mov [edi], ax   ; Write the character and attribute to video memory.
+    
+    add edi, 2      ; Move to the next character cell (2 bytes).
+    jmp .loop
 .done:
-    ret                 ; Return from the subroutine.
+    ret
 
 ; =============================================================================
 ; Data Section
 ; =============================================================================
 msg_hello:
-    db 'Hello, DurhamOS!', 0x0D, 0x0A, 0   ; The string to print.
-                                          ; 0x0D = Carriage Return
-                                          ; 0x0A = Line Feed
-                                          ; 0    = Null terminator
+    db 'Hello from 16-bit Real Mode!', 0x0D, 0x0A, 0
+
+msg_protected:
+    db 'Successfully switched to 32-bit Protected Mode!', 0
 
 ; =============================================================================
 ; Bootloader Signature
-; The BIOS requires the boot sector to be exactly 512 bytes long and to
-; end with the magic number 0xAA55.
 ; =============================================================================
-times 510 - ($ - $$) db 0   ; Pad the rest of the file with zeros.
-dw 0xAA55                   ; The magic boot signature.
+times 510 - ($ - $$) db 0
+dw 0xAA55
