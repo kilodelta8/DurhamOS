@@ -1,0 +1,4 @@
+.vscode
+cross_compiler
+toolchain/build-binutils
+toolchain/build-gcc
