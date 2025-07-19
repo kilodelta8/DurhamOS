@@ -2,3 +2,6 @@
 cross_compiler
 toolchain/build-binutils
 toolchain/build-gcc
+toolchain/src/*
+toolchain/binutils-*
+toolchain/gcc-*
